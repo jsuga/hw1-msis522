@@ -251,20 +251,27 @@ def load_metadata_bundle() -> dict[str, Any]:
 def load_saved_models_and_metadata() -> tuple[dict[str, Any], dict[str, Any]]:
     models_payload: dict[str, Any] = {}
     metadata = load_metadata_bundle()
+    missing_models: list[str] = []
 
     if not MODELS_DIR.exists():
-        metadata["load_status"] = {"missing_dir": True, "empty_dir": False, "found": []}
+        metadata["load_status"] = {"missing_dir": True, "empty_dir": False, "found": [], "missing_models": []}
         return models_payload, metadata
 
     model_files = list(MODELS_DIR.glob("*.joblib")) + list(MODELS_DIR.glob("*.pkl"))
     if not model_files:
-        metadata["load_status"] = {"missing_dir": False, "empty_dir": True, "found": []}
+        metadata["load_status"] = {"missing_dir": False, "empty_dir": True, "found": [], "missing_models": []}
         return models_payload, metadata
 
     manifest = metadata.get("manifest")
     if not manifest or "models" not in manifest:
         manifest = build_manifest_from_files()
         metadata["manifest"] = manifest
+    else:
+        for item in manifest.get("models", []):
+            filename = item.get("file")
+            display_name = normalize_model_name(item.get("display_name", "")) if item else ""
+            if filename and not (MODELS_DIR / filename).exists():
+                missing_models.append(display_name or filename)
 
     per_model_metrics = metadata.get("per_model_metrics", {})
     cv_results = metadata.get("cv_results", {})
@@ -300,6 +307,7 @@ def load_saved_models_and_metadata() -> tuple[dict[str, Any], dict[str, Any]]:
         "missing_dir": False,
         "empty_dir": False,
         "found": list(models_payload.keys()),
+        "missing_models": missing_models,
     }
     return models_payload, metadata
 
@@ -1097,6 +1105,9 @@ if load_status.get("missing_dir") or load_status.get("empty_dir"):
     st.sidebar.warning("Some model artifacts are missing.")
     active_model_name = None
 else:
+    missing_models = load_status.get("missing_models") or []
+    if missing_models:
+        st.sidebar.info("Unavailable models: " + ", ".join(missing_models))
     model_names = list(models_payload.keys())
     st.sidebar.markdown(f"{len(model_names)} trained models available.")
     if "selected_model" not in st.session_state:
