@@ -1,0 +1,16 @@
+[
+  "neighbourhood_group",
+  "neighbourhood",
+  "latitude",
+  "longitude",
+  "room_type",
+  "minimum_nights",
+  "number_of_reviews",
+  "reviews_per_month",
+  "calculated_host_listings_count",
+  "availability_365",
+  "days_since_last_review",
+  "last_review_year",
+  "last_review_month",
+  "has_review"
+]

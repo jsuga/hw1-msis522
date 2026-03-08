@@ -1,0 +1,29 @@
+{
+  "target": "price",
+  "input_rows": 5000,
+  "input_features": [
+    "neighbourhood_group",
+    "neighbourhood",
+    "latitude",
+    "longitude",
+    "room_type",
+    "minimum_nights",
+    "number_of_reviews",
+    "reviews_per_month",
+    "calculated_host_listings_count",
+    "availability_365",
+    "days_since_last_review",
+    "last_review_year",
+    "last_review_month",
+    "has_review"
+  ],
+  "models_trained": [
+    "Linear Regression",
+    "Lasso Regression",
+    "Ridge Regression",
+    "CART / Decision Tree",
+    "Random Forest",
+    "LightGBM"
+  ],
+  "best_model": "Lasso Regression"
+}

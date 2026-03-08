@@ -1,0 +1,16 @@
+{
+  "neighbourhood_group": "Manhattan",
+  "neighbourhood": "Bedford-Stuyvesant",
+  "latitude": 40.722075000000004,
+  "longitude": -73.95524,
+  "room_type": "Entire home/apt",
+  "minimum_nights": 2.0,
+  "number_of_reviews": 5.0,
+  "reviews_per_month": 0.66,
+  "calculated_host_listings_count": 1.0,
+  "availability_365": 36.0,
+  "days_since_last_review": 55.0,
+  "last_review_year": 2019.0,
+  "last_review_month": 6.0,
+  "has_review": 1.0
+}

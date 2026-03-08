@@ -1,0 +1,52 @@
+{
+  "rows": [
+    {
+      "Model": "Linear Regression",
+      "CV Mean RMSE": 270.2475743703022,
+      "CV Std RMSE": 6.4902020656080595,
+      "Test MAE": 69.19531854481252,
+      "Test RMSE": 152.3380809270758,
+      "Test R2": 0.1722412392346362
+    },
+    {
+      "Model": "Lasso Regression",
+      "CV Mean RMSE": 269.1474862645355,
+      "CV Std RMSE": 6.022230507779426,
+      "Test MAE": 68.0531330620215,
+      "Test RMSE": 151.67592800303993,
+      "Test R2": 0.17942147530053532
+    },
+    {
+      "Model": "Ridge Regression",
+      "CV Mean RMSE": 268.8370556759829,
+      "CV Std RMSE": 6.15939513398925,
+      "Test MAE": 68.34937817805327,
+      "Test RMSE": 151.81475307665661,
+      "Test R2": 0.1779186790665933
+    },
+    {
+      "Model": "CART / Decision Tree",
+      "CV Mean RMSE": 302.7047501711654,
+      "CV Std RMSE": 16.4109270400524,
+      "Test MAE": 69.46553397434889,
+      "Test RMSE": 212.2710948264732,
+      "Test R2": -0.6071948979090935
+    },
+    {
+      "Model": "Random Forest",
+      "CV Mean RMSE": 274.37726179260494,
+      "CV Std RMSE": 9.747392441764532,
+      "Test MAE": 68.45767666666667,
+      "Test RMSE": 184.4445153390309,
+      "Test R2": -0.21344002627407987
+    },
+    {
+      "Model": "LightGBM",
+      "CV Mean RMSE": 273.6843343989875,
+      "CV Std RMSE": 8.856559820516992,
+      "Test MAE": 77.83840503927726,
+      "Test RMSE": 168.71872863915763,
+      "Test R2": -0.01534448369558361
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "linear": {
+    "shap_values": "artifacts\\shap\\linear\\values.npy",
+    "base_values": "artifacts\\shap\\linear\\base_values.npy",
+    "transformed_data": "artifacts\\shap\\linear\\X_transformed.parquet",
+    "importance": "artifacts\\shap\\linear\\importance.csv",
+    "summary_plot": "artifacts\\plots\\shap_summary_linear.png",
+    "bar_plot": "artifacts\\plots\\shap_bar_linear.png"
+  },
+  "lasso": {
+    "shap_values": "artifacts\\shap\\lasso\\values.npy",
+    "base_values": "artifacts\\shap\\lasso\\base_values.npy",
+    "transformed_data": "artifacts\\shap\\lasso\\X_transformed.parquet",
+    "importance": "artifacts\\shap\\lasso\\importance.csv",
+    "summary_plot": "artifacts\\plots\\shap_summary_lasso.png",
+    "bar_plot": "artifacts\\plots\\shap_bar_lasso.png"
+  },
+  "ridge": {
+    "shap_values": "artifacts\\shap\\ridge\\values.npy",
+    "base_values": "artifacts\\shap\\ridge\\base_values.npy",
+    "transformed_data": "artifacts\\shap\\ridge\\X_transformed.parquet",
+    "importance": "artifacts\\shap\\ridge\\importance.csv",
+    "summary_plot": "artifacts\\plots\\shap_summary_ridge.png",
+    "bar_plot": "artifacts\\plots\\shap_bar_ridge.png"
+  },
+  "cart": {
+    "shap_values": "artifacts\\shap\\cart\\values.npy",
+    "base_values": "artifacts\\shap\\cart\\base_values.npy",
+    "transformed_data": "artifacts\\shap\\cart\\X_transformed.parquet",
+    "importance": "artifacts\\shap\\cart\\importance.csv",
+    "summary_plot": "artifacts\\plots\\shap_summary_cart.png",
+    "bar_plot": "artifacts\\plots\\shap_bar_cart.png"
+  },
+  "random_forest": {
+    "shap_values": "artifacts\\shap\\random_forest\\values.npy",
+    "base_values": "artifacts\\shap\\random_forest\\base_values.npy",
+    "transformed_data": "artifacts\\shap\\random_forest\\X_transformed.parquet",
+    "importance": "artifacts\\shap\\random_forest\\importance.csv",
+    "summary_plot": "artifacts\\plots\\shap_summary_random_forest.png",
+    "bar_plot": "artifacts\\plots\\shap_bar_random_forest.png"
+  },
+  "lightgbm": {
+    "shap_values": "artifacts\\shap\\lightgbm\\values.npy",
+    "base_values": "artifacts\\shap\\lightgbm\\base_values.npy",
+    "transformed_data": "artifacts\\shap\\lightgbm\\X_transformed.parquet",
+    "importance": "artifacts\\shap\\lightgbm\\importance.csv",
+    "summary_plot": "artifacts\\plots\\shap_summary_lightgbm.png",
+    "bar_plot": "artifacts\\plots\\shap_bar_lightgbm.png"
+  }
+}

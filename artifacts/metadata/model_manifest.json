@@ -1,0 +1,49 @@
+{
+  "created_at": "2026-03-08T05:20:36.609648Z",
+  "target": "price",
+  "cv_splits": 2,
+  "scoring": {
+    "rmse": "neg_root_mean_squared_error",
+    "mae": "neg_mean_absolute_error",
+    "r2": "r2"
+  },
+  "models": [
+    {
+      "display_name": "Linear Regression",
+      "file": "linear_regression.joblib",
+      "tuned": false,
+      "is_tree": false
+    },
+    {
+      "display_name": "Lasso Regression",
+      "file": "lasso_regression.joblib",
+      "tuned": true,
+      "is_tree": false
+    },
+    {
+      "display_name": "Ridge Regression",
+      "file": "ridge_regression.joblib",
+      "tuned": true,
+      "is_tree": false
+    },
+    {
+      "display_name": "CART / Decision Tree",
+      "file": "cart.joblib",
+      "tuned": true,
+      "is_tree": true
+    },
+    {
+      "display_name": "Random Forest",
+      "file": "random_forest.joblib",
+      "tuned": true,
+      "is_tree": true
+    },
+    {
+      "display_name": "LightGBM",
+      "file": "lightgbm.joblib",
+      "tuned": true,
+      "is_tree": true
+    }
+  ],
+  "best_model": "Lasso Regression"
+}

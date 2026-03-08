@@ -1,0 +1,152 @@
+{
+  "CART / Decision Tree": [
+    {
+      "feature": "num__reviews_per_month",
+      "importance": 0.4811942465050025
+    },
+    {
+      "feature": "cat__neighbourhood_Clinton Hill",
+      "importance": 0.13494176172143285
+    },
+    {
+      "feature": "num__availability_365",
+      "importance": 0.07665066082621919
+    },
+    {
+      "feature": "cat__room_type_Entire home/apt",
+      "importance": 0.06281324264601519
+    },
+    {
+      "feature": "cat__neighbourhood_Greenpoint",
+      "importance": 0.04866105936659055
+    },
+    {
+      "feature": "num__minimum_nights",
+      "importance": 0.04410165165043665
+    },
+    {
+      "feature": "num__longitude",
+      "importance": 0.03980169261976868
+    },
+    {
+      "feature": "cat__neighbourhood_Forest Hills",
+      "importance": 0.016883124794927862
+    },
+    {
+      "feature": "num__last_review_month",
+      "importance": 0.01490962975514856
+    },
+    {
+      "feature": "cat__neighbourhood_Bedford-Stuyvesant",
+      "importance": 0.014740761755942083
+    },
+    {
+      "feature": "cat__neighbourhood_Upper East Side",
+      "importance": 0.012753610454216182
+    },
+    {
+      "feature": "num__latitude",
+      "importance": 0.009416858269496954
+    }
+  ],
+  "Random Forest": [
+    {
+      "feature": "num__longitude",
+      "importance": 0.16713915684662264
+    },
+    {
+      "feature": "num__days_since_last_review",
+      "importance": 0.10941075779844582
+    },
+    {
+      "feature": "num__reviews_per_month",
+      "importance": 0.10833641268271937
+    },
+    {
+      "feature": "num__availability_365",
+      "importance": 0.08224832286438943
+    },
+    {
+      "feature": "num__minimum_nights",
+      "importance": 0.07882038257138829
+    },
+    {
+      "feature": "cat__neighbourhood_Clinton Hill",
+      "importance": 0.07204675470409672
+    },
+    {
+      "feature": "cat__room_type_Entire home/apt",
+      "importance": 0.06731527959893996
+    },
+    {
+      "feature": "num__latitude",
+      "importance": 0.04770115387290822
+    },
+    {
+      "feature": "num__last_review_month",
+      "importance": 0.03923971350847901
+    },
+    {
+      "feature": "num__last_review_year",
+      "importance": 0.038010572895042345
+    },
+    {
+      "feature": "num__calculated_host_listings_count",
+      "importance": 0.03268435841592145
+    },
+    {
+      "feature": "num__number_of_reviews",
+      "importance": 0.020632341513462254
+    }
+  ],
+  "LightGBM": [
+    {
+      "feature": "num__longitude",
+      "importance": 938.0
+    },
+    {
+      "feature": "num__availability_365",
+      "importance": 771.0
+    },
+    {
+      "feature": "num__days_since_last_review",
+      "importance": 769.0
+    },
+    {
+      "feature": "num__latitude",
+      "importance": 763.0
+    },
+    {
+      "feature": "num__minimum_nights",
+      "importance": 612.0
+    },
+    {
+      "feature": "num__reviews_per_month",
+      "importance": 528.0
+    },
+    {
+      "feature": "num__number_of_reviews",
+      "importance": 332.0
+    },
+    {
+      "feature": "cat__neighbourhood_Greenpoint",
+      "importance": 227.0
+    },
+    {
+      "feature": "num__calculated_host_listings_count",
+      "importance": 206.0
+    },
+    {
+      "feature": "num__last_review_month",
+      "importance": 201.0
+    },
+    {
+      "feature": "cat__neighbourhood_Clinton Hill",
+      "importance": 190.0
+    },
+    {
+      "feature": "cat__room_type_Entire home/apt",
+      "importance": 110.0
+    }
+  ]
+}

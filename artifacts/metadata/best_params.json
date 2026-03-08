@@ -1,0 +1,27 @@
+{
+  "Linear Regression": {
+    "note": "No tuning applied for baseline linear regression."
+  },
+  "Lasso Regression": {
+    "alpha": 0.1
+  },
+  "Ridge Regression": {
+    "alpha": 1.0
+  },
+  "CART / Decision Tree": {
+    "max_depth": 8,
+    "min_samples_leaf": 1,
+    "min_samples_split": 2
+  },
+  "Random Forest": {
+    "max_depth": null,
+    "min_samples_leaf": 1,
+    "n_estimators": 200
+  },
+  "LightGBM": {
+    "learning_rate": 0.1,
+    "max_depth": -1,
+    "n_estimators": 200,
+    "num_leaves": 31
+  }
+}
