@@ -16,6 +16,7 @@ import seaborn as sns
 import streamlit as st
 from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import KFold, cross_validate, train_test_split
@@ -66,6 +67,8 @@ TEST_SIZE = 0.3
 CV_SPLITS = 2
 TREE_MODEL_NAMES = {"CART / Decision Tree", "Random Forest", "LightGBM"}
 LINEAR_MODEL_NAMES = {"Linear Regression", "Lasso Regression", "Ridge Regression"}
+RANDOM_FOREST_ARTIFACT = "random_forest.joblib"
+FALLBACK_MAX_TRAIN_ROWS = 5000
 
 MODEL_DISPLAY_ORDER = [
     "Linear Regression",
@@ -170,6 +173,12 @@ def build_preprocessor(numeric_cols: list[str], categorical_cols: list[str]) -> 
     )
 
 
+def build_model_pipeline(model, X_train: pd.DataFrame) -> Pipeline:
+    column_types = get_column_types(X_train)
+    preprocessor = build_preprocessor(column_types["numeric"], column_types["categorical"])
+    return Pipeline(steps=[("preprocess", preprocessor), ("model", model)])
+
+
 def evaluate_regression_model(y_true: pd.Series, y_pred: np.ndarray) -> dict[str, float]:
     mse = mean_squared_error(y_true, y_pred)
     return {
@@ -251,19 +260,71 @@ def load_metadata_bundle() -> dict[str, Any]:
 
 
 @st.cache_resource
+def train_random_forest_fallback() -> tuple[Pipeline | None, str]:
+    logger = logging.getLogger(__name__)
+    try:
+        df = load_dataset()
+        if len(df) > FALLBACK_MAX_TRAIN_ROWS:
+            df = df.sample(n=FALLBACK_MAX_TRAIN_ROWS, random_state=RANDOM_STATE)
+            logger.info("Random Forest fallback training sampled %s rows.", FALLBACK_MAX_TRAIN_ROWS)
+        X, y = split_features_target(df)
+        X_train, _, y_train, _ = train_test_split(
+            X,
+            y,
+            test_size=TEST_SIZE,
+            random_state=RANDOM_STATE,
+        )
+        model = RandomForestRegressor(
+            n_estimators=120,
+            max_depth=None,
+            min_samples_leaf=2,
+            min_samples_split=2,
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+        )
+        pipeline = build_model_pipeline(model, X_train)
+        pipeline.fit(X_train, y_train)
+        return pipeline, ""
+    except Exception as exc:
+        logger.exception("Random Forest fallback training failed.")
+        return None, str(exc)
+
+
+@st.cache_resource
+def load_or_train_random_forest(artifact_mtime: float | None) -> tuple[Any | None, str]:
+    logger = logging.getLogger(__name__)
+    rf_path = MODELS_DIR / RANDOM_FOREST_ARTIFACT
+    if rf_path.exists():
+        try:
+            return joblib.load(rf_path), ""
+        except Exception as exc:
+            logger.exception(
+                "Failed to load Random Forest artifact at %s. Falling back to retraining.",
+                rf_path,
+            )
+            error = str(exc)
+    else:
+        logger.warning("Random Forest artifact not found at %s. Training a fallback model.", rf_path)
+        error = "Missing artifact."
+
+    model_obj, train_error = train_random_forest_fallback()
+    if model_obj is None:
+        logger.error("Random Forest unavailable after fallback training failure: %s", train_error)
+        return None, train_error or error
+    return model_obj, ""
+
+
+@st.cache_resource
 def load_saved_models_and_metadata() -> tuple[dict[str, Any], dict[str, Any]]:
     models_payload: dict[str, Any] = {}
     metadata = load_metadata_bundle()
     missing_models: list[str] = []
 
-    if not MODELS_DIR.exists():
-        metadata["load_status"] = {"missing_dir": True, "empty_dir": False, "found": [], "missing_models": []}
-        return models_payload, metadata
-
-    model_files = list(MODELS_DIR.glob("*.joblib")) + list(MODELS_DIR.glob("*.pkl"))
-    if not model_files:
-        metadata["load_status"] = {"missing_dir": False, "empty_dir": True, "found": [], "missing_models": []}
-        return models_payload, metadata
+    missing_dir = not MODELS_DIR.exists()
+    model_files: list[Path] = []
+    if not missing_dir:
+        model_files = list(MODELS_DIR.glob("*.joblib")) + list(MODELS_DIR.glob("*.pkl"))
+    empty_dir = not model_files
 
     manifest = metadata.get("manifest")
     if not manifest or "models" not in manifest:
@@ -289,10 +350,45 @@ def load_saved_models_and_metadata() -> tuple[dict[str, Any], dict[str, Any]]:
             continue
         path = MODELS_DIR / filename
         if not path.exists():
+            if display_name == "Random Forest":
+                artifact_mtime = path.stat().st_mtime if path.exists() else None
+                model_obj, _ = load_or_train_random_forest(artifact_mtime)
+                if model_obj is not None:
+                    models_payload[display_name] = {
+                        "model": model_obj,
+                        "artifact_path": str(path),
+                        "metrics": per_model_metrics.get(display_name),
+                        "best_params": best_params.get(display_name),
+                        "cv_results": cv_results.get(display_name),
+                        "predictions": predictions.get(display_name),
+                        "supports_shap": display_name in TREE_MODEL_NAMES or display_name in LINEAR_MODEL_NAMES,
+                        "supports_feature_importance": display_name in TREE_MODEL_NAMES,
+                        "feature_importances": feature_importances.get(display_name, []),
+                    }
             continue
         try:
             model_obj = joblib.load(path)
         except Exception:
+            logging.getLogger(__name__).exception(
+                "Failed to load model artifact for %s at %s.",
+                display_name,
+                path,
+            )
+            if display_name == "Random Forest":
+                artifact_mtime = path.stat().st_mtime if path.exists() else None
+                model_obj, _ = load_or_train_random_forest(artifact_mtime)
+                if model_obj is not None:
+                    models_payload[display_name] = {
+                        "model": model_obj,
+                        "artifact_path": str(path),
+                        "metrics": per_model_metrics.get(display_name),
+                        "best_params": best_params.get(display_name),
+                        "cv_results": cv_results.get(display_name),
+                        "predictions": predictions.get(display_name),
+                        "supports_shap": display_name in TREE_MODEL_NAMES or display_name in LINEAR_MODEL_NAMES,
+                        "supports_feature_importance": display_name in TREE_MODEL_NAMES,
+                        "feature_importances": feature_importances.get(display_name, []),
+                    }
             continue
         models_payload[display_name] = {
             "model": model_obj,
@@ -306,9 +402,30 @@ def load_saved_models_and_metadata() -> tuple[dict[str, Any], dict[str, Any]]:
             "feature_importances": feature_importances.get(display_name, []),
         }
 
+    if "Random Forest" not in models_payload:
+        rf_path = MODELS_DIR / RANDOM_FOREST_ARTIFACT
+        artifact_mtime = rf_path.stat().st_mtime if rf_path.exists() else None
+        model_obj, _ = load_or_train_random_forest(artifact_mtime)
+        if model_obj is not None:
+            models_payload["Random Forest"] = {
+                "model": model_obj,
+                "artifact_path": str(rf_path),
+                "metrics": per_model_metrics.get("Random Forest"),
+                "best_params": best_params.get("Random Forest"),
+                "cv_results": cv_results.get("Random Forest"),
+                "predictions": predictions.get("Random Forest"),
+                "supports_shap": True,
+                "supports_feature_importance": True,
+                "feature_importances": feature_importances.get("Random Forest", []),
+            }
+
+    missing_models = [name for name in missing_models if name not in models_payload]
+    if "Random Forest" not in models_payload and "Random Forest" not in missing_models:
+        missing_models.append("Random Forest")
+
     metadata["load_status"] = {
-        "missing_dir": False,
-        "empty_dir": False,
+        "missing_dir": missing_dir,
+        "empty_dir": empty_dir,
         "found": list(models_payload.keys()),
         "missing_models": missing_models,
     }
@@ -1163,7 +1280,7 @@ if manifest and manifest.get("best_model"):
     best_model_name = normalize_model_name(manifest["best_model"]) or best_model_name
 
 st.sidebar.header("Explore Models")
-if load_status.get("missing_dir") or load_status.get("empty_dir"):
+if (load_status.get("missing_dir") or load_status.get("empty_dir")) and not models_payload:
     st.sidebar.warning("Some model artifacts are missing.")
     active_model_name = None
 else:
