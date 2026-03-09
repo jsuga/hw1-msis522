@@ -28,7 +28,8 @@ except Exception:
     shap = None
 
 APP_DIR = Path(__file__).resolve().parent
-DATA_PATH = APP_DIR.parent / "AB_NYC_2019.csv"
+BASE_DIR = Path(__file__).resolve().parent
+DATA_PATH = BASE_DIR / "AB_NYC_2019.csv"
 ARTIFACTS_DIR = APP_DIR / "artifacts"
 MODELS_DIR = ARTIFACTS_DIR / "models"
 METADATA_DIR = ARTIFACTS_DIR / "metadata"
