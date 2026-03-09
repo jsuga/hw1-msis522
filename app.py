@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 from pathlib import Path
 from typing import Any
@@ -63,6 +64,7 @@ RANDOM_STATE = 42
 TEST_SIZE = 0.3
 CV_SPLITS = 2
 TREE_MODEL_NAMES = {"CART / Decision Tree", "Random Forest", "LightGBM"}
+LINEAR_MODEL_NAMES = {"Linear Regression", "Lasso Regression", "Ridge Regression"}
 
 MODEL_DISPLAY_ORDER = [
     "Linear Regression",
@@ -298,7 +300,7 @@ def load_saved_models_and_metadata() -> tuple[dict[str, Any], dict[str, Any]]:
             "best_params": best_params.get(display_name),
             "cv_results": cv_results.get(display_name),
             "predictions": predictions.get(display_name),
-            "supports_shap": display_name in TREE_MODEL_NAMES,
+            "supports_shap": display_name in TREE_MODEL_NAMES or display_name in LINEAR_MODEL_NAMES,
             "supports_feature_importance": display_name in TREE_MODEL_NAMES,
             "feature_importances": feature_importances.get(display_name, []),
         }
@@ -431,7 +433,13 @@ def load_shap_module():
     return shap
 
 
-def compute_shap_values(model_pipeline, X_sample: pd.DataFrame, feature_names: list[str]):
+def _ensure_feature_names(feature_names: list[str], feature_count: int) -> list[str]:
+    if not feature_names or len(feature_names) != feature_count:
+        return [f"feature_{i}" for i in range(feature_count)]
+    return feature_names
+
+
+def compute_shap_values(model_name: str, model_pipeline, X_sample: pd.DataFrame):
     shap = load_shap_module()
     if shap is None:
         return None, "SHAP is not installed."
@@ -444,12 +452,29 @@ def compute_shap_values(model_pipeline, X_sample: pd.DataFrame, feature_names: l
     if preprocess is None or model is None:
         return None, "Model pipeline is incomplete."
 
-    X_trans = preprocess.transform(X_sample)
-    if hasattr(X_trans, "toarray"):
-        X_trans = X_trans.toarray()
-
     try:
-        explainer = shap.TreeExplainer(model)
+        # Keep preprocessing and SHAP handling together to simplify debugging.
+        X_trans = preprocess.transform(X_sample)
+        if hasattr(X_trans, "toarray"):
+            X_trans = X_trans.toarray()
+
+        feature_names = get_transformed_feature_names(preprocess, X_sample)
+        feature_names = _ensure_feature_names(feature_names, X_trans.shape[1])
+
+        explainer = None
+        if model_name in LINEAR_MODEL_NAMES:
+            try:
+                explainer = shap.LinearExplainer(model, X_trans, feature_perturbation="interventional")
+            except Exception:
+                logging.getLogger(__name__).exception(
+                    "LinearExplainer failed for %s. Falling back to shap.Explainer.", model_name
+                )
+                explainer = shap.Explainer(model, X_trans)
+        elif model_name in TREE_MODEL_NAMES:
+            explainer = shap.TreeExplainer(model)
+        else:
+            explainer = shap.Explainer(model, X_trans)
+
         shap_values = explainer(X_trans)
         if hasattr(shap_values, "values"):
             values = shap_values.values
@@ -468,7 +493,32 @@ def compute_shap_values(model_pipeline, X_sample: pd.DataFrame, feature_names: l
             "feature_names": feature_names,
         }, ""
     except Exception:
+        logging.getLogger(__name__).exception("SHAP computation failed for %s.", model_name)
         return None, "SHAP values could not be computed for this model."
+
+
+def get_shap_cache() -> dict[str, Any]:
+    cache = st.session_state.get("shap_artifacts")
+    if not isinstance(cache, dict):
+        cache = {}
+        st.session_state["shap_artifacts"] = cache
+    return cache
+
+
+def build_shap_signature(model_pipeline, X_sample: pd.DataFrame) -> tuple[Any, ...]:
+    return (id(model_pipeline), len(X_sample), tuple(X_sample.columns))
+
+
+def get_or_build_shap_bundle(model_name: str, model_pipeline, X_sample: pd.DataFrame):
+    cache = get_shap_cache()
+    signature = build_shap_signature(model_pipeline, X_sample)
+    cached = cache.get(model_name)
+    if cached and cached.get("signature") == signature and cached.get("payload") is not None:
+        return cached["payload"], cached.get("error", "")
+
+    payload, error = compute_shap_values(model_name, model_pipeline, X_sample)
+    cache[model_name] = {"signature": signature, "payload": payload, "error": error}
+    return payload, error
 
 
 def get_transformed_feature_names(preprocess, input_df: pd.DataFrame) -> list[str]:
@@ -948,21 +998,29 @@ def render_explainability_tab(
     st.subheader("Explainability")
     st.caption(f"Currently viewing: {active_model_name}")
 
-    if model_payload.get("supports_shap"):
+    if not model_payload.get("supports_shap"):
+        st.info(f"SHAP explainability is not configured for {active_model_name}.")
+    else:
         if shap is None:
             st.warning("SHAP is not installed, so explainability plots are unavailable.")
             return
+
+        shap_cache = get_shap_cache()
+        for cached_model in list(shap_cache.keys()):
+            if cached_model not in models_payload:
+                del shap_cache[cached_model]
+
         X, _ = split_features_target(df)
-        sample = X.sample(n=min(300, len(X)), random_state=42)
         feature_columns = metadata.get("feature_columns")
         if feature_columns:
-            sample = sample[feature_columns]
-        preprocess = model_pipeline.named_steps.get("preprocess") if hasattr(model_pipeline, "named_steps") else None
-        feature_names = get_transformed_feature_names(preprocess, sample) if preprocess is not None else list(sample.columns)
+            X = X[feature_columns]
+        sample = X.sample(n=min(300, len(X)), random_state=RANDOM_STATE)
 
-        shap_payload, error = compute_shap_values(model_pipeline, sample, feature_names)
+        with st.spinner("Computing SHAP artifacts..."):
+            shap_payload, error = get_or_build_shap_bundle(active_model_name, model_pipeline, sample)
+
         if shap_payload is None:
-            st.info(error)
+            st.warning(error)
         else:
             shap_values = shap_payload["values"]
             X_trans = shap_payload["X_trans"]
@@ -981,9 +1039,12 @@ def render_explainability_tab(
             st.markdown("**SHAP Waterfall (single prediction)**")
             row_idx = st.slider("Inspect single prediction index", 0, len(sample) - 1, 0)
             render_shap_waterfall(shap_payload, row_idx, feature_names)
-    else:
-        st.info(f"SHAP artifacts unavailable for {active_model_name}. Showing coefficient-based note instead.")
-        st.caption("For linear models, coefficients describe the direction and magnitude of each feature's impact.")
+
+            if active_model_name in LINEAR_MODEL_NAMES:
+                st.caption(
+                    "Coefficient-based interpretation remains useful for linear models: "
+                    "positive coefficients increase price predictions while negative coefficients decrease them."
+                )
 
     st.subheader("Interactive Prediction")
     X, _ = split_features_target(df)
